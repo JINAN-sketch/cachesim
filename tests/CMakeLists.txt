@@ -7,7 +7,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable(cachesim_tests
-    test_placeholder.cpp
+    test_address_decomposition.cpp
 )
 target_link_libraries(cachesim_tests PRIVATE cachesim_lib GTest::gtest_main)
 
