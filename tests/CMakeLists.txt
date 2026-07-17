@@ -8,6 +8,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(cachesim_tests
     test_address_decomposition.cpp
+    test_lru_policy.cpp
 )
 target_link_libraries(cachesim_tests PRIVATE cachesim_lib GTest::gtest_main)
 

@@ -23,7 +23,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 add_library(cachesim_lib
-    src/placeholder.cpp
+    src/replacement_policy.cpp
 )
 target_include_directories(cachesim_lib PUBLIC include)
 
