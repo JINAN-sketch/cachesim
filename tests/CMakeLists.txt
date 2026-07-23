@@ -10,6 +10,7 @@ add_executable(cachesim_tests
     test_address_decomposition.cpp
     test_lru_policy.cpp
     test_cache.cpp
+    test_memory_hierarchy.cpp
 )
 target_link_libraries(cachesim_tests PRIVATE cachesim_lib GTest::gtest_main)
 
