@@ -4,26 +4,30 @@
 using namespace cachesim;
 
 TEST(Cache, HitsMissesAndEviction) {
-    CacheConfig cfg(128, 2);  // 128 bytes, 2-way
+    CacheConfig cfg(128, 2);
     Cache cache(cfg, 16, PolicyKind::LRU, WritePolicy::WriteBack, AllocPolicy::WriteAllocate);
 
     bool evicted_dirty, wrote_to_memory;
+    uint64_t evicted_addr;
 
-    EXPECT_FALSE(cache.access(0x00, true, evicted_dirty, wrote_to_memory));
+    EXPECT_FALSE(cache.access(0x00, true, evicted_dirty, wrote_to_memory, evicted_addr));
     EXPECT_FALSE(evicted_dirty);
 
-    EXPECT_TRUE(cache.access(0x00, false, evicted_dirty, wrote_to_memory));
+    EXPECT_TRUE(cache.access(0x00, false, evicted_dirty, wrote_to_memory, evicted_addr));
 
-    EXPECT_FALSE(cache.access(0x40, false, evicted_dirty, wrote_to_memory));
+    EXPECT_FALSE(cache.access(0x40, false, evicted_dirty, wrote_to_memory, evicted_addr));
     EXPECT_FALSE(evicted_dirty);
 
-    EXPECT_TRUE(cache.access(0x00, false, evicted_dirty, wrote_to_memory));
+    EXPECT_TRUE(cache.access(0x00, false, evicted_dirty, wrote_to_memory, evicted_addr));
 
-    EXPECT_FALSE(cache.access(0x80, true, evicted_dirty, wrote_to_memory));
+    EXPECT_FALSE(cache.access(0x80, true, evicted_dirty, wrote_to_memory, evicted_addr));
     EXPECT_FALSE(evicted_dirty);
 
-    EXPECT_FALSE(cache.access(0xC0, false, evicted_dirty, wrote_to_memory));
+    // This eviction is dirty (the 0x00 line, written in step 1) -- confirm
+    // evicted_addr correctly reconstructs the original address.
+    EXPECT_FALSE(cache.access(0xC0, false, evicted_dirty, wrote_to_memory, evicted_addr));
     EXPECT_TRUE(evicted_dirty);
+    EXPECT_EQ(evicted_addr, 0x00u);
 }
 
 TEST(Cache, WriteThroughNeverGoesDirty) {
@@ -31,19 +35,17 @@ TEST(Cache, WriteThroughNeverGoesDirty) {
     Cache cache(cfg, 16, PolicyKind::LRU, WritePolicy::WriteThrough, AllocPolicy::WriteAllocate);
 
     bool evicted_dirty, wrote_to_memory;
+    uint64_t evicted_addr;
 
-    // Write miss, write-allocate: line gets installed AND written through.
-    EXPECT_FALSE(cache.access(0x00, true, evicted_dirty, wrote_to_memory));
+    EXPECT_FALSE(cache.access(0x00, true, evicted_dirty, wrote_to_memory, evicted_addr));
     EXPECT_TRUE(wrote_to_memory);
 
-    // Write hit: still writes through every time, never just marks dirty.
-    EXPECT_TRUE(cache.access(0x00, true, evicted_dirty, wrote_to_memory));
+    EXPECT_TRUE(cache.access(0x00, true, evicted_dirty, wrote_to_memory, evicted_addr));
     EXPECT_TRUE(wrote_to_memory);
 
-    // Force an eviction of this line later -- it should never have gone dirty.
-    cache.access(0x40, true, evicted_dirty, wrote_to_memory);      // fills way 1
-    EXPECT_FALSE(cache.access(0x80, true, evicted_dirty, wrote_to_memory)); // evicts way 0 (tag 0)
-    EXPECT_FALSE(evicted_dirty);  // never dirty under write-through
+    cache.access(0x40, true, evicted_dirty, wrote_to_memory, evicted_addr);
+    EXPECT_FALSE(cache.access(0x80, true, evicted_dirty, wrote_to_memory, evicted_addr));
+    EXPECT_FALSE(evicted_dirty);
 }
 
 TEST(Cache, NoWriteAllocateSkipsCacheOnWriteMiss) {
@@ -51,12 +53,11 @@ TEST(Cache, NoWriteAllocateSkipsCacheOnWriteMiss) {
     Cache cache(cfg, 16, PolicyKind::LRU, WritePolicy::WriteBack, AllocPolicy::NoWriteAllocate);
 
     bool evicted_dirty, wrote_to_memory;
+    uint64_t evicted_addr;
 
-    // Write miss: with no-write-allocate, nothing gets installed.
-    EXPECT_FALSE(cache.access(0x00, true, evicted_dirty, wrote_to_memory));
+    EXPECT_FALSE(cache.access(0x00, true, evicted_dirty, wrote_to_memory, evicted_addr));
     EXPECT_TRUE(wrote_to_memory);
-    EXPECT_FALSE(evicted_dirty);  // nothing was evicted -- nothing was ever installed
+    EXPECT_FALSE(evicted_dirty);
 
-    // Prove it really wasn't installed: same address again is STILL a miss.
-    EXPECT_FALSE(cache.access(0x00, true, evicted_dirty, wrote_to_memory));
+    EXPECT_FALSE(cache.access(0x00, true, evicted_dirty, wrote_to_memory, evicted_addr));
 }

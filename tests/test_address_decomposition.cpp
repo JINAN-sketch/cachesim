@@ -29,3 +29,12 @@ TEST(AddressDecomposition, Log2OfPowerOfTwo) {
     EXPECT_EQ(cachesim::log2_of_power_of_two(16), 4u);
     EXPECT_EQ(cachesim::log2_of_power_of_two(256), 8u);
 }
+TEST(AddressDecomposition, RecomposeIsInverseOfDecompose) {
+    // Round-trip property: decomposing then recomposing should return
+    // the original address (with offset bits zeroed, since decompose
+    // discards them -- we only test addresses that are already block-aligned).
+    uint64_t addr = 0x54;  // block_size=16, num_sets=4 -- same config as KnownValues
+    auto d = cachesim::decompose_address(addr, 16, 4);
+    uint64_t recomposed = cachesim::recompose_address(d.tag, d.index, 16, 4);
+    EXPECT_EQ(recomposed, addr & ~0xFull);  // clear the low 4 offset bits to compare fairly
+}

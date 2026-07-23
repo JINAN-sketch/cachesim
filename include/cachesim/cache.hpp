@@ -23,7 +23,7 @@ public:
     // wrote_to_memory: did this access cause an immediate write to memory
     // (always true for write-through writes and no-write-allocate misses;
     // never true for write-back hits, since those just mark dirty instead)
-    bool access(uint64_t addr, bool is_write, bool& evicted_dirty, bool& wrote_to_memory) {
+    bool access(uint64_t addr, bool is_write, bool& evicted_dirty, bool& wrote_to_memory,uint64_t& evicted_addr) {
         evicted_dirty = false;
         wrote_to_memory = false;
 
@@ -57,6 +57,9 @@ public:
         size_t victim_way = set.choose_victim();
         CacheLine& victim_line = set.line(victim_way);
         evicted_dirty = victim_line.valid && victim_line.dirty;
+        if(evicted_dirty){
+            evicted_addr = recompose_address(victim_line.tag,d.index,block_size_,num_sets_);
+        }
 
         victim_line.tag   = d.tag;
         victim_line.valid = true;

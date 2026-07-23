@@ -38,5 +38,13 @@ inline Decomposed decompose_address(uint64_t addr, uint64_t block_size, uint64_t
     result.index = static_cast<size_t>(index);
     return result;
 }
+inline uint64_t recompose_address(uint64_t tag, size_t index,uint64_t block_size,uint64_t num_sets){
+    unsigned offset_bits = log2_of_power_of_two(block_size);
+    unsigned index_bits = log2_of_power_of_two(num_sets);
+
+    uint64_t index_part = static_cast<uint64_t>(index) << offset_bits;
+    uint64_t tag_part = tag << (offset_bits + index_bits);
+    return tag_part | index_part;
+}
 }
 #endif
